@@ -332,6 +332,8 @@ message LayerParameter {
   optional TanHParameter tanh_param = 127;
   optional ThresholdParameter threshold_param = 128;
   optional WindowDataParameter window_data_param = 129;
+  
+  optional SliceMapParameter slice_map_param = 86313;
 }
 
 // Message that stores parameters used to apply transformation
@@ -697,6 +699,14 @@ message SliceParameter {
 
   // DEPRECATED: alias for "axis" -- does not support negative indexing.
   optional uint32 slice_dim = 1 [default = 1];
+}
+
+// Message that stores parameters used by SliceMapLayer
+message SliceMapParameter {
+  optional int32 y_begin = 1 [default = 0];
+  optional int32 y_end = 2 [default = -1];
+  optional int32 x_begin = 3 [default = 0];
+  optional int32 x_end = 4 [default = -1];
 }
 
 // Message that stores parameters used by SoftmaxLayer, SoftmaxWithLossLayer
