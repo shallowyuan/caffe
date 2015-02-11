@@ -1,6 +1,7 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -159,12 +160,13 @@ void Solver<Dtype>::InitTestNets() {
 }
 
 template <typename Dtype>
-void Solver<Dtype>::Step(int iters) {
+vector<Dtype> Solver<Dtype>::Step(int iters) {
   vector<Blob<Dtype>*> bottom_vec;
   const int start_iter = iter_;
   const int stop_iter = iter_ + iters;
   int average_loss = this->param_.average_loss();
   vector<Dtype> losses;
+  vector<Dtype> losses_vec;
   Dtype smoothed_loss = 0;
 
   for (; iter_ < stop_iter; ++iter_) {
@@ -176,6 +178,8 @@ void Solver<Dtype>::Step(int iters) {
     const bool display = param_.display() && iter_ % param_.display() == 0;
     net_->set_debug_info(display && param_.debug_info());
     Dtype loss = net_->ForwardBackward(bottom_vec);
+    losses_vec.push_back(loss);
+    // average the loss across iterations for smoothed reporting
     if (losses.size() < average_loss) {
       losses.push_back(loss);
       int size = losses.size();
@@ -215,6 +219,7 @@ void Solver<Dtype>::Step(int iters) {
       Snapshot();
     }
   }
+  return losses_vec;
 }
 
 template <typename Dtype>
@@ -410,6 +415,15 @@ Dtype SGDSolver<Dtype>::GetLearningRate() {
     LOG(FATAL) << "Unknown learning rate policy: " << lr_policy;
   }
   return rate;
+}
+
+template <typename Dtype>
+void SGDSolver<Dtype>::SetLearningRate(Dtype lr) {
+    if (this->param_.lr_policy() != "fixed") {
+      throw std::runtime_error(
+        "ResetLearningRate can not be called when lr_policy != 'fixed'");
+    }
+    this->param_.set_base_lr(lr);
 }
 
 template <typename Dtype>
