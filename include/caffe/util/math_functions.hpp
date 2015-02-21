@@ -210,6 +210,9 @@ void caffe_gpu_powx(const int n, const Dtype* a, const Dtype b, Dtype* y);
 // [0, UINT_MAX].
 void caffe_gpu_rng_uniform(const int n, unsigned int* r);
 
+template <typename Dtype>
+void caffe_rng_uniform_int(const int n, const int a, const int b, Dtype* r);
+
 // caffe_gpu_rng_uniform with four arguments generates floats in the range
 // (a, b] (strictly greater than a, less than or equal to b) due to the
 // specification of curandGenerateUniform.  With a = 0, b = 1, just calls
