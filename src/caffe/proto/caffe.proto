@@ -158,6 +158,9 @@ message SolverParameter {
   // whenever their actual L2 norm is larger.
   optional float clip_gradients = 35 [default = -1];
 
+  // Force momentum history computation in CPU in order to save memory
+  optional bool force_cpu_momentum = 25832 [default = false];
+
   optional int32 snapshot = 14 [default = 0]; // The snapshot interval
   optional string snapshot_prefix = 15; // The prefix for the snapshot.
   // whether to snapshot diff in the results or not. Snapshotting diff will help
