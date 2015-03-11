@@ -176,6 +176,19 @@ struct NdarrayCallPolicies : public bp::default_call_policies {
   }
 };
 
+bp::object Blob_Shape(bp::tuple args, bp::dict kwargs) {
+  if (bp::len(kwargs) > 0) {
+    throw std::runtime_error("Blob.shape takes no kwargs");
+  }
+  Blob<Dtype>* self = bp::extract<Blob<Dtype>*>(args[0]);
+  const vector<int> &shape = self->shape();
+  bp::list shape_list;
+  BOOST_FOREACH(int s, shape) {
+    shape_list.append(s);
+  }
+  return bp::tuple(shape_list);
+}
+
 bp::object Blob_Reshape(bp::tuple args, bp::dict kwargs) {
   if (bp::len(kwargs) > 0) {
     throw std::runtime_error("Blob.reshape takes no kwargs");
@@ -236,6 +249,7 @@ BOOST_PYTHON_MODULE(_caffe) {
     .add_property("width",    &Blob<Dtype>::width)
     .add_property("count",    static_cast<int (Blob<Dtype>::*)() const>(
         &Blob<Dtype>::count))
+    .add_property("shape", bp::raw_function(&Blob_Shape))
     .def("reshape",           bp::raw_function(&Blob_Reshape))
     .add_property("data",     bp::make_function(&Blob<Dtype>::mutable_cpu_data,
           NdarrayCallPolicies()))
