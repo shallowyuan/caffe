@@ -86,7 +86,10 @@ void GradientChecker<Dtype>::CheckGradientSingle(Layer<Dtype>* layer,
   vector<bool> propagate_down(bottom.size(), check_bottom < 0);
   for (int i = 0; i < layer->blobs().size(); ++i) {
     Blob<Dtype>* blob = layer->blobs()[i].get();
-    caffe_set(blob->count(), static_cast<Dtype>(0), blob->mutable_cpu_diff());
+    // To check layers are implmented for accumulation, let diff starts with
+    // bias 1.0. However, this is really a quick hack. There is no
+    // well-explained messages even if CHECK fails.
+    caffe_set(blob->count(), static_cast<Dtype>(1.0), blob->mutable_cpu_diff());
     blobs_to_check.push_back(blob);
   }
   if (check_bottom < 0) {
@@ -118,6 +121,11 @@ void GradientChecker<Dtype>::CheckGradientSingle(Layer<Dtype>* layer,
     Dtype* computed_gradients =
         computed_gradient_blobs[blob_id]->mutable_cpu_data();
     caffe_copy(count, diff, computed_gradients);
+    // Remove bias for layer blobs.
+    const bool is_layer_blob = blob_id < layer->blobs().size();
+    if (is_layer_blob) {
+      caffe_add_scalar(count, static_cast<Dtype>(-1.0), computed_gradients);
+    }
   }
   // Compute derivative of top w.r.t. each bottom and parameter input using
   // finite differencing.
