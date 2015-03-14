@@ -9,6 +9,7 @@ if pycuda_util.pycuda_available:
 
     import caffe
     from pycuda.compiler import SourceModule
+    import pycuda.gpuarray as gpuarray
 
     caffe_include_dirs = pycuda_util.caffe_include_dirs
 
@@ -110,3 +111,25 @@ __global__ void axpb(float a, float *x, float b, int n) {
                     **pycuda_util.block_and_grid(self.blob.count))
             for v, w in zip(self.blob.data.flat, base.flat):
                 self.assertEqual(v, a * np.float32(w) + b)
+
+        def test_scikits_cuda_cublas_sgemm(self):
+            try:
+                import scikits.cuda.cublas as cublas
+            except ImportError:
+                return
+            foo = self.rng.randn(10, 9, 8)
+            self.blob.data[...] = foo
+            with pycuda_util.caffe_cuda_context():
+                h = caffe.cublas_handle()
+                a = self.blob.data_as_pycuda_gpuarray()
+                a = a.reshape(10, 9 * 8)
+                b = gpuarray.to_gpu(
+                    self.rng.randn(9 * 8, 2).astype(np.float32))
+                c = gpuarray.zeros((10, 2), np.float32)
+                cublas.cublasSgemm(h, 'N', 'N', 2, 10, 9 * 8,
+                    1.0, b.gpudata, 2, a.gpudata, 9*8, 0., c.gpudata, 2)
+                a = a.get()
+                b = b.get()
+                c = c.get()
+            c2 = np.dot(a, b)
+            assert np.allclose(c, c2, rtol=0, atol=1e-5)
