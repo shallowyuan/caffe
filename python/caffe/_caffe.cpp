@@ -17,6 +17,7 @@
 #include <fstream>  // NOLINT
 
 #include "caffe/caffe.hpp"
+#include "caffe/layer_factory.hpp"
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/python_layer.hpp"
 
@@ -193,6 +194,45 @@ bp::object Blob_Reshape(bp::tuple args, bp::dict kwargs) {
   return bp::object();
 }
 
+// Layer
+template <class T>
+vector<T> py_to_vector(bp::object pyiter) {
+  vector<T> vec;
+  for (int i = 0; i < bp::len(pyiter); ++i) {
+    vec.push_back(bp::extract<T>(pyiter[i]));
+  }
+  return vec;
+}
+bp::object Layer_SetUp(bp::tuple args, bp::dict kwargs) {
+    Layer<Dtype> *layer = bp::extract<Layer<Dtype>*>(args[0]);
+    vector<Blob<Dtype>*> bottom = py_to_vector<Blob<Dtype>*>(args[1]);
+    vector<Blob<Dtype>*> top = py_to_vector<Blob<Dtype>*>(args[2]);
+    layer->SetUp(bottom, top);
+    return bp::object();
+}
+bp::object Layer_Reshape(bp::tuple args, bp::dict kwargs) {
+    Layer<Dtype> *layer = bp::extract<Layer<Dtype>*>(args[0]);
+    vector<Blob<Dtype>*> bottom = py_to_vector<Blob<Dtype>*>(args[1]);
+    vector<Blob<Dtype>*> top = py_to_vector<Blob<Dtype>*>(args[2]);
+    layer->Reshape(bottom, top);
+    return bp::object();
+}
+Dtype Layer_Forward(bp::tuple args, bp::dict kwargs) {
+    Layer<Dtype> *layer = bp::extract<Layer<Dtype>*>(args[0]);
+    vector<Blob<Dtype>*> bottom = py_to_vector<Blob<Dtype>*>(args[1]);
+    vector<Blob<Dtype>*> top = py_to_vector<Blob<Dtype>*>(args[2]);
+    Dtype loss = layer->Forward(bottom, top);
+    return loss;
+}
+bp::object Layer_Backward(bp::tuple args, bp::dict kwargs) {
+    Layer<Dtype> *layer = bp::extract<Layer<Dtype>*>(args[0]);
+    vector<Blob<Dtype>*> top = py_to_vector<Blob<Dtype>*>(args[1]);
+    vector<bool> propagate_down = py_to_vector<bool>(args[2]);
+    vector<Blob<Dtype>*> bottom = py_to_vector<Blob<Dtype>*>(args[3]);
+    layer->Backward(top, propagate_down, bottom);
+    return bp::object();
+}
+
 // LayerParameter
 shared_ptr<LayerParameter> LayerParameter_Init(bp::object py_layer_param) {
   shared_ptr<LayerParameter> layer_param(new LayerParameter);
@@ -230,6 +270,12 @@ bp::object LayerParameter_ToPython(bp::tuple args, bp::dict kwargs) {
   layer_param->SerializeToString(&dump);
   py_layer_param.attr("ParseFromString")(bp::object(dump));
   return py_layer_param;
+}
+
+// Create layer from caffe_pb2.LayerParameter in Python
+shared_ptr<Layer<Dtype> > create_layer(bp::object py_layer_param) {
+  shared_ptr<LayerParameter> layer_param(LayerParameter_Init(py_layer_param));
+  return LayerRegistry<Dtype>::CreateLayer(*layer_param.get());
 }
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(SolveOverloads, Solve, 0, 1);
@@ -285,11 +331,16 @@ BOOST_PYTHON_MODULE(_caffe) {
           NdarrayCallPolicies()));
 
   bp::class_<Layer<Dtype>, shared_ptr<PythonLayer<Dtype> >,
-    boost::noncopyable>("Layer", bp::init<const LayerParameter&>())
+      boost::noncopyable>(
+      "Layer", bp::init<const LayerParameter&>())
     .add_property("blobs", bp::make_function(&Layer<Dtype>::blobs,
           bp::return_internal_reference<>()))
     .def("setup", &Layer<Dtype>::LayerSetUp)
+    .def("SetUp", bp::raw_function(&Layer_SetUp))
     .def("reshape", &Layer<Dtype>::Reshape)
+    .def("Reshape", bp::raw_function(&Layer_Reshape))
+    .def("Forward", bp::raw_function(&Layer_Forward))
+    .def("Backward", bp::raw_function(&Layer_Backward))
     .add_property("type", bp::make_function(&Layer<Dtype>::type));
   bp::register_ptr_to_python<shared_ptr<Layer<Dtype> > >();
 
@@ -298,6 +349,8 @@ BOOST_PYTHON_MODULE(_caffe) {
     .def("__init__", bp::make_constructor(&LayerParameter_Init))
     .def("from_python", bp::raw_function(&LayerParameter_FromPython))
     .def("_to_python", bp::raw_function(&LayerParameter_ToPython));
+
+  bp::def("create_layer", &create_layer);
 
   bp::class_<Solver<Dtype>, shared_ptr<Solver<Dtype> >, boost::noncopyable>(
     "Solver", bp::no_init)
