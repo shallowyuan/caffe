@@ -176,6 +176,25 @@ struct NdarrayCallPolicies : public bp::default_call_policies {
   }
 };
 
+// Blob constructor with shape iterable
+shared_ptr<Blob<Dtype> > Blob_Init(bp::object shape_object) {
+  size_t ndim;
+  try {
+    ndim = bp::len(shape_object);
+  } catch(...) {
+    throw std::runtime_error("1st arg must be iterable.");
+  }
+  vector<int> shape(ndim);
+  try {
+    for (int i = 0; i < ndim; ++i) {
+      shape[i] = bp::extract<int>(shape_object[i]);
+    }
+  } catch(...) {
+    throw std::runtime_error("All element in shape iterable must be integer.");
+  }
+  return shared_ptr<Blob<Dtype> >(new Blob<Dtype>(shape));
+}
+
 bp::object Blob_Shape(bp::tuple args, bp::dict kwargs) {
   if (bp::len(kwargs) > 0) {
     throw std::runtime_error("Blob.shape takes no kwargs");
@@ -242,7 +261,8 @@ BOOST_PYTHON_MODULE(_caffe) {
     .def("save", &Net_Save);
 
   bp::class_<Blob<Dtype>, shared_ptr<Blob<Dtype> >, boost::noncopyable>(
-    "Blob", bp::no_init)
+      "Blob", bp::no_init)
+    .def("__init__", bp::make_constructor(&Blob_Init))
     .add_property("num",      &Blob<Dtype>::num)
     .add_property("channels", &Blob<Dtype>::channels)
     .add_property("height",   &Blob<Dtype>::height)
