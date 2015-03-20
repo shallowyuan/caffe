@@ -27,10 +27,11 @@ class GradientChecker:
         propagate_down = [False for i in xrange(len(bottom))]
         blobs_to_check = []
         for blob in layer.blobs:
+            blob.diff[...] = 1.0
             blobs_to_check += [blob]
         if check_bottom == 'all':
             check_bottom = range(len(bottom))
-        assert len(check_bottom) == len(bottom)
+        assert len(check_bottom) <= len(bottom)
         for cb in check_bottom:
             blobs_to_check += [bottom[cb]]
             propagate_down[cb] = True
@@ -47,6 +48,8 @@ class GradientChecker:
 
         # Compute finite diff
         for bi, (ana_grad, blob) in enumerate(zip(ana_grads, blobs_to_check)):
+            if bi < len(layer.blobs):
+                ana_grad -= 1.0
             for fi in xrange(blob.count):
                 step = self.stepsize_
                 # L(fi <-- fi+step)
