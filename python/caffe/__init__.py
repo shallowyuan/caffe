@@ -11,3 +11,7 @@ from .proto.caffe_pb2 import TRAIN, TEST
 from .classifier import Classifier
 from .detector import Detector
 import io
+try:
+	from ._caffe import get_cuda_num_threads, get_blocks, cublas_handle
+except ImportError:
+	pass
