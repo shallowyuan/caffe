@@ -7,12 +7,14 @@ MAKE="make --jobs=$NUM_THREADS --keep-going"
 if $WITH_CMAKE; then
   mkdir build
   cd build
-  cmake -DBUILD_python=ON -DCMAKE_BUILD_TYPE=Release -DCPU_ONLY=ON ..
-  $MAKE
   if ! $WITH_CUDA; then
-    $MAKE runtest
-    $MAKE lint
+    cmake -DBUILD_python=ON -DCMAKE_BUILD_TYPE=Release -DCPU_ONLY=ON ..
+  else
+    cmake -DBUILD_python=ON -DCMAKE_BUILD_TYPE=Release ..
   fi
+  $MAKE all
+  $MAKE runtest
+  $MAKE lint
   $MAKE clean
   cd -
 else
