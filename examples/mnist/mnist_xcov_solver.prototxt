@@ -1,6 +1,6 @@
 net: "examples/mnist/mnist_xcov.prototxt"
-test_state: { stage: 'test-on-train' }
-test_iter: 500
+# test_state: { stage: 'test-on-train' }
+# test_iter: 500
 test_state: { stage: 'test-on-test' }
 test_iter: 100
 test_interval: 500
