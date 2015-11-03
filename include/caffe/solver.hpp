@@ -37,10 +37,6 @@ class Solver {
     return test_nets_;
   }
   int iter() { return iter_; }
-
- protected:
-  // Get the update value for the current iteration.
-  virtual void ComputeUpdateValue() = 0;
   // The Solver::Snapshot function implements the basic snapshotting utility
   // that stores the learned net. You should implement the SnapshotSolverState()
   // function that produces a SolverState protocol buffer that needs to be
@@ -49,6 +45,10 @@ class Solver {
   // The test routine
   void TestAll();
   void Test(const int test_net_id = 0);
+
+protected:
+  // Get the update value for the current iteration.
+  virtual void ComputeUpdateValue() = 0;
   virtual void SnapshotSolverState(SolverState* state) = 0;
   virtual void RestoreSolverState(const SolverState& state) = 0;
   void DisplayOutputBlobs(const int net_id);

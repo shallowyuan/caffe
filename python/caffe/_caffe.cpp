@@ -455,7 +455,9 @@ BOOST_PYTHON_MODULE(_caffe) {
     .def("solve", static_cast<void (Solver<Dtype>::*)(const char*)>(
           &Solver<Dtype>::Solve), SolveOverloads())
     .def("step", &Solver<Dtype>::Step)
-    .def("restore", &Solver<Dtype>::Restore);
+    .def("restore", &Solver<Dtype>::Restore)
+    .def("snapshot", &Solver<Dtype>::Snapshot)
+    .def("test_all", &Solver<Dtype>::TestAll);
 
   bp::class_<SGDSolver<Dtype>, bp::bases<Solver<Dtype> >,
     shared_ptr<SGDSolver<Dtype> >, boost::noncopyable>(
